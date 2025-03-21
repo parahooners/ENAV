@@ -95,6 +95,7 @@ void loadHomePoint();
 double calculateDirectionToHome();
 int calculateBatteryStatus();
 void drawNavigationDisplay(int centerX, int centerY, double homeBearing, double pilotHeading);
+void drawSpeedometer(int centerX, int centerY, int speed);
 void updateDisplay();
 void handleButtonPress();
 void buzz(unsigned int frequency, unsigned long duration);
@@ -179,6 +180,26 @@ void displayWelcomeScreen() {
   display.drawCircle(140, 70, 4, GxEPD_BLACK); // Smoke puff 2
   display.drawCircle(143, 63, 5, GxEPD_BLACK); // Smoke puff 3
 
+  // Draw a campfire
+  display.fillTriangle(90, 160, 100, 140, 110, 160, GxEPD_RED); // Fire
+  display.drawLine(85, 165, 115, 165, GxEPD_BLACK); // Bottom log
+  display.drawLine(95, 170, 105, 160, GxEPD_BLACK); // Cross log
+
+  // Draw people dancing around the campfire
+  display.drawCircle(70, 150, 5, GxEPD_BLACK); // Person 1 head
+  display.drawLine(70, 155, 70, 165, GxEPD_BLACK); // Person 1 body
+  display.drawLine(70, 160, 65, 165, GxEPD_BLACK); // Person 1 left leg
+  display.drawLine(70, 160, 75, 165, GxEPD_BLACK); // Person 1 right leg
+  display.drawLine(70, 157, 65, 152, GxEPD_BLACK); // Person 1 left arm
+  display.drawLine(70, 157, 75, 152, GxEPD_BLACK); // Person 1 right arm
+
+  display.drawCircle(130, 150, 5, GxEPD_BLACK); // Person 2 head
+  display.drawLine(130, 155, 130, 165, GxEPD_BLACK); // Person 2 body
+  display.drawLine(130, 160, 125, 165, GxEPD_BLACK); // Person 2 left leg
+  display.drawLine(130, 160, 135, 165, GxEPD_BLACK); // Person 2 right leg
+  display.drawLine(130, 157, 125, 152, GxEPD_BLACK); // Person 2 left arm
+  display.drawLine(130, 157, 135, 152, GxEPD_BLACK); // Person 2 right arm
+
   // Text "ICELAND"
   display.setTextSize(2);
   display.setCursor(70, 170);
@@ -191,6 +212,9 @@ void displayWelcomeScreen() {
 
   display.update();
   Serial.println("Screen 1: Welcome Screen");
+
+  // Wait for 1 second before moving on
+  delay(1000);
 }
 
 void displayWaitingForSatsScreen() {
@@ -275,21 +299,11 @@ void displayHomePointScreen() {
   // Draw the navigation display
   drawNavigationDisplay(100, 100, homeBearing, pilotHeading);
 
-  // Display distance to home in KM starting from the middle of the screen at the top
-  double distanceKm = homePointSet ? gps.distanceBetween(gps.location.lat(), gps.location.lng(), homeLatitude, homeLongitude) / 1000.0 : 0.0;
-  display.setTextSize(2);
-  display.setCursor(80, 0); // Centered at the top
-  display.print(distanceKm, 2);
-  display.print(" KM");
+  // Draw the speedometer
+  int speed = gps.speed.isValid() ? (int)gps.speed.kmph() : 0; // Get speed in km/h
+  drawSpeedometer(100, 100, speed);
 
-  // Adjust the speed (MPH) display to avoid being cut off
-  display.setCursor(70, 175); // Adjusted position for MPH display
-  if (gps.speed.isValid()) {
-    display.print((int)gps.speed.mph()); // Cast to int to remove decimal point
-    display.print(" MPH");
-  } else {
-    display.print("0 MPH");
-  }
+  // Remove the MPH display (no longer needed)
 
   // Display battery percentage on the top left
   int batteryPercentage = calculateBatteryStatus();
@@ -543,17 +557,18 @@ double calculateRelativeBearing(double homeBearing, double pilotHeading) {
 }
 
 void drawNavigationDisplay(int centerX, int centerY, double homeBearing, double pilotHeading) {
-  // Calculate the relative bearing
-  double relativeBearing = calculateRelativeBearing(homeBearing, pilotHeading);
+  // Draw a 200x200 box around the screen
+  display.drawRect(0, 0, 200, 200, GxEPD_BLACK);
 
-  // Draw the navigation circles
-  display.fillCircle(centerX, centerY, 30, GxEPD_BLACK);  // Inner circle (solid black)
-  display.drawCircle(centerX, centerY, 60, GxEPD_BLACK); // Middle circle
-  display.drawCircle(centerX, centerY, 80, GxEPD_BLACK); // Outer circle
+  // Reduce the size of the filled black circle by 30%
+  display.fillCircle(centerX, centerY, 28, GxEPD_BLACK);  // Inner circle (reduced size)
+  display.drawCircle(centerX, centerY, 70, GxEPD_BLACK); // Middle circle
+  display.drawCircle(centerX, centerY, 95, GxEPD_BLACK); // Outer circle (made smaller to fit the screen)
+  display.drawCircle(centerX, centerY, 96, GxEPD_BLACK); // Thicker outer circle
 
   // Draw the fixed arrow (triangle) pointing forward
   int arrowTipX = centerX;
-  int arrowTipY = centerY - 30; // Tip of the arrow
+  int arrowTipY = centerY - 28; // Adjusted for smaller inner circle
   int arrowBaseLeftX = centerX - 10;
   int arrowBaseLeftY = centerY - 10;
   int arrowBaseRightX = centerX + 10;
@@ -561,28 +576,69 @@ void drawNavigationDisplay(int centerX, int centerY, double homeBearing, double 
   display.fillTriangle(arrowTipX, arrowTipY, arrowBaseLeftX, arrowBaseLeftY, arrowBaseRightX, arrowBaseRightY, GxEPD_BLACK);
 
   // Calculate the position of the "H" circle based on the relative bearing
-  double relativeBearingRad = relativeBearing * DEG_TO_RAD; // Convert to radians
-  int hCircleX = centerX + 70 * sin(relativeBearingRad);    // Use sin for X
-  int hCircleY = centerY - 70 * cos(relativeBearingRad);    // Use cos for Y
+  double relativeBearingRad = calculateRelativeBearing(homeBearing, pilotHeading) * DEG_TO_RAD; // Convert to radians
+  int hCircleX = centerX + 80 * sin(relativeBearingRad);    // Move inward slightly
+  int hCircleY = centerY - 80 * cos(relativeBearingRad);
 
   // Draw the "H" circle filled with black
-  display.fillCircle(hCircleX, hCircleY, 15, GxEPD_BLACK); // Larger circle for "H"
+  display.fillCircle(hCircleX, hCircleY, 12, GxEPD_BLACK); // Larger circle for "H"
 
-  // Draw the "H" in white text
+  // Draw the "H" in bold white text
   display.setTextColor(GxEPD_WHITE);
-  display.setTextSize(2); // Make the "H" larger
+  display.setTextSize(2); // Make the "H" bolder
   display.setCursor(hCircleX - 6, hCircleY - 8); // Center the "H" inside the circle
   display.print("H");
   display.setTextColor(GxEPD_BLACK); // Reset text color to black
 
-  // Display the fuel level in the middle solid circle
+  // Display the fuel level in the middle solid circle (bold)
   char fuelText[5];
   sprintf(fuelText, "%.0f", fuelLevel); // Convert fuel level to integer-like format
   display.setTextColor(GxEPD_WHITE);
-  display.setTextSize(2);
-  display.setCursor(centerX - 10, centerY - 8); // Adjust position to match the moved circle
+  display.setTextSize(3); // Make the fuel number bolder
+  display.setCursor(centerX - 15, centerY - 10); // Adjust position to match the moved circle
   display.print(fuelText);
   display.setTextColor(GxEPD_BLACK); // Reset text color to black
+
+  // Display distance slightly below the previous position and reduce font size
+  double distanceKm = homePointSet ? gps.distanceBetween(gps.location.lat(), gps.location.lng(), homeLatitude, homeLongitude) / 1000.0 : 0.0;
+  display.setTextSize(2); // Reduce the font size for the distance number
+  char distanceText[10];
+  if (distanceKm > 10) {
+    sprintf(distanceText, "%.0f", distanceKm); // No decimal places for values above 10
+  } else if (distanceKm > 1) {
+    sprintf(distanceText, "%.1f", distanceKm); // 1 decimal place for values above 1
+  } else {
+    sprintf(distanceText, "%.2f", distanceKm); // 2 decimal places for values below 1
+  }
+  int textWidth = strlen(distanceText) * 12; // Approximate width of text at size 2
+  display.setCursor(centerX - (textWidth / 2), centerY + 35); // Center the text and move it slightly down
+  display.print(distanceText);
+}
+
+void drawSpeedometer(int centerX, int centerY, int speed) {
+  // Adjusted radius to fit the new layout
+  int radius = 90; // Radius of the speedometer
+  int labelOffset = 35; // Adjusted offset to position numbers along the curve
+  int needleLength = radius - 20; // Ensure the needle does not touch the circle
+
+  // Draw tick marks and labels for every 10 km/h
+  for (int i = 0; i <= 60; i += 10) {
+    double angle = (180 + (i * 180.0 / 60)) * DEG_TO_RAD; // Map 0-60 to 180° to 0°
+    int labelX = centerX + (radius - labelOffset) * cos(angle);
+    int labelY = centerY + (radius - labelOffset) * sin(angle);
+
+    // Rotate the text to follow the curve
+    display.setTextSize(2); // Larger font size for numbers
+    display.setCursor(labelX - 8, labelY - 10); // Adjust position to center the text
+    display.print(i);
+  }
+
+  // Draw the needle (shortened and thicker)
+  double needleAngle = (180 + (speed * 180.0 / 60)) * DEG_TO_RAD; // Map speed to angle
+  int needleX = centerX + needleLength * cos(needleAngle);
+  int needleY = centerY + needleLength * sin(needleAngle);
+  display.drawLine(centerX, centerY, needleX, needleY, GxEPD_BLACK); // First line
+  display.drawLine(centerX + 1, centerY, needleX + 1, needleY, GxEPD_BLACK); // Thicker line
 }
 
 void updateDisplay() {
