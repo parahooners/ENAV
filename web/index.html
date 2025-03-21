@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ENAV Manager</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h1>ENAV Manager</h1>
+    
+    <div class="connection-status">
+        <img id="connectionIcon" src="disconnected.png" alt="Disconnected" class="connection-icon">
+        <span id="connectionText">Disconnected</span>
+        <button id="connectButton" style="margin-left: 20px;">Connect to Board</button>
+        <div class="battery-status">
+            <span id="batteryVoltage">0.0V</span>
+            <div class="battery-indicator">
+                <div id="batteryLevel"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="page-container">
+        <!-- Left panel with controls -->
+        <div class="left-panel">
+            <div class="controls">
+                <h3>Home Location</h3>
+                <div class="home-coordinates">
+                    <div>
+                        <label for="savedHomeLat">Latitude:</label>
+                        <input type="text" id="savedHomeLat" readonly>
+                    </div>
+                    <div>
+                        <label for="savedHomeLon">Longitude:</label>
+                        <input type="text" id="savedHomeLon" readonly>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <h3>Fuel Settings</h3>
+                <div class="fuel-settings">
+                    <div class="fuel-stats">
+                        <div>
+                            <label for="currentFuelLevel">Current Fuel:</label>
+                            <span id="currentFuelLevel">0</span> L
+                        </div>
+                        <div>
+                            <label for="currentBurnRate">Burn Rate:</label>
+                            <span id="currentBurnRate">0</span> L/h
+                        </div>
+                    </div>
+                    <div class="fuel-inputs">
+                        <div>
+                            <label for="newFuelLevel">New Level (L):</label>
+                            <input type="number" id="newFuelLevel" min="0" max="100" step="0.1">
+                        </div>
+                        <div>
+                            <label for="newBurnRate">New Rate (L/h):</label>
+                            <input type="number" id="newBurnRate" min="0" max="10" step="0.1">
+                        </div>
+                    </div>
+                    <button id="updateFuelButton">Update Fuel</button>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <h3>Operation Mode</h3>
+                <div class="mode-selector">
+                    <button id="flyingModeBtn" class="mode-button active">Flying</button>
+                    <button id="walkingModeBtn" class="mode-button">Walking</button>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <h3>Points of Interest</h3>
+                <p>Click on map to set location.</p>
+                <div class="poi-container">
+                    <!-- POI 1 -->
+                    <div class="poi-card">
+                        <h4>POI 1 <span class="poi-color-indicator" style="background-color: red;"></span></h4>
+                        <div class="poi-status" id="poi1Status">Disabled</div>
+                        <div>
+                            <input type="checkbox" id="poi1Enabled"> 
+                            <label for="poi1Enabled">Enable</label>
+                            <input type="checkbox" id="poi1SetNew" class="set-poi-checkbox"> 
+                            <label for="poi1SetNew">Set</label>
+                        </div>
+                        <div>
+                            <label for="poi1Lat">Lat:</label>
+                            <input type="text" id="poi1Lat" placeholder="Latitude">
+                        </div>
+                        <div>
+                            <label for="poi1Lon">Lon:</label>
+                            <input type="text" id="poi1Lon" placeholder="Longitude">
+                        </div>
+                        <div class="poi-buttons">
+                            <button id="poi1DisableBtn" class="disable-poi-btn">Disable POI</button>
+                        </div>
+                    </div>
+                    
+                    <!-- POI 2 -->
+                    <div class="poi-card">
+                        <h4>POI 2 <span class="poi-color-indicator" style="background-color: blue;"></span></h4>
+                        <div class="poi-status" id="poi2Status">Disabled</div>
+                        <div>
+                            <input type="checkbox" id="poi2Enabled"> 
+                            <label for="poi2Enabled">Enable</label>
+                            <input type="checkbox" id="poi2SetNew" class="set-poi-checkbox"> 
+                            <label for="poi2SetNew">Set</label>
+                        </div>
+                        <div>
+                            <label for="poi2Lat">Lat:</label>
+                            <input type="text" id="poi2Lat" placeholder="Latitude">
+                        </div>
+                        <div>
+                            <label for="poi2Lon">Lon:</label>
+                            <input type="text" id="poi2Lon" placeholder="Longitude">
+                        </div>
+                        <div class="poi-buttons">
+                            <button id="poi2DisableBtn" class="disable-poi-btn">Disable POI</button>
+                        </div>
+                    </div>
+                    
+                    <!-- POI 3 -->
+                    <div class="poi-card">
+                        <h4>POI 3 <span class="poi-color-indicator" style="background-color: green;"></span></h4>
+                        <div class="poi-status" id="poi3Status">Disabled</div>
+                        <div>
+                            <input type="checkbox" id="poi3Enabled"> 
+                            <label for="poi3Enabled">Enable</label>
+                            <input type="checkbox" id="poi3SetNew" class="set-poi-checkbox"> 
+                            <label for="poi3SetNew">Set</label>
+                        </div>
+                        <div>
+                            <label for="poi3Lat">Lat:</label>
+                            <input type="text" id="poi3Lat" placeholder="Latitude">
+                        </div>
+                        <div>
+                            <label for="poi3Lon">Lon:</label>
+                            <input type="text" id="poi3Lon" placeholder="Longitude">
+                        </div>
+                        <div class="poi-buttons">
+                            <button id="poi3DisableBtn" class="disable-poi-btn">Disable POI</button>
+                        </div>
+                    </div>
+                </div>
+                <button id="updatePOIButton">Update All POIs</button>
+            </div>
+        </div>
+        
+        <!-- Right panel with map -->
+        <div class="right-panel">
+            <div class="map-container controls">
+                <h3>Navigation Map</h3>
+                <div id="map"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
